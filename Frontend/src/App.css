@@ -1,0 +1,20 @@
+body {
+  margin: 0;
+}
+.main-content {
+  display: flex;
+}
+
+.card-section.full {
+  width: 100%;
+}
+
+.card-section.half {
+  width: 70%;
+}
+
+.chat-section {
+  margin-right: 2px;
+  width: 30%;
+  border-left: 2px solid rgb(255, 115, 0);
+}
