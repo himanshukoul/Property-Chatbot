@@ -4,8 +4,9 @@ from config import DevelopmentConfig
 client = MongoClient(DevelopmentConfig.MONGO_URI)
 db = client.real_estate
 db_listings = db.listings
-
 #db_listings.create_index([("location_point", GEOSPHERE)])
+db_users = db.users
+db_users.create_index("email", unique=True)
 def post_listings(doc):
     db_listings.insert_one(doc)
 

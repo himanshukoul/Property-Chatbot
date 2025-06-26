@@ -5,9 +5,14 @@ def get_or_create_session(session_id):
         "description": "",
         "mode": "common",  # 'common' | 'search' | 'post'
        # "fields_acquired": [],
-        "fields": {}
+        "fields": {},
+        "user_id": None
     })
 
+def set_user(session_id,user_id):
+    session = get_or_create_session(session_id)
+    session["user_id"] = user_id
+    
 def update_field(session_id, key, value):
     session = get_or_create_session(session_id)
     if value is not None:

@@ -4,7 +4,7 @@ function ChatWindow({ chatHistory, waitingResponse }) {
     <div className="chat-window">
       {chatHistory.map((msg, index) => (
         <div
-          key={index} //later replacing by uuid
+          key={msg.id} 
           className={
             msg.sender === "user" ? "chat-bubble user" : "chat-bubble bot"
           }

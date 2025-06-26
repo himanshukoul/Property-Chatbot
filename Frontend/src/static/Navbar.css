@@ -12,12 +12,14 @@
   font-weight: bold;
 }
 
-.navbar-links a {
+.navbar-links Button {
   margin-left: 20px;
   color: white;
+  background-color: #013a2c;
   text-decoration: none;
 }
 
-.navbar-links a:hover {
+.navbar-links Button:hover {
   text-decoration: underline;
+  background-color: black;
 }
