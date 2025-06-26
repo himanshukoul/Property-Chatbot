@@ -1,8 +1,9 @@
 from pinecone_client import upsert_listing
-from db import post_listings
+from db import post_listings, db_users
 from flask_socketio import emit
 from session2 import get_or_create_session, reset_session
 import uuid
+from bson import ObjectId
 
 REQUIRED_FIELDS = [
     "loc_name", "listing_type", "property_type", "ownership", "price", "area",
@@ -13,7 +14,10 @@ REQUIRED_FIELDS = [
 def handle_post(session_id, bot_reply):
     session = get_or_create_session(session_id)
     fields = session["fields"]
-
+    user_id = session.get("user_id")
+    if not user_id:
+        emit("bot_response", {"message": "Authentication required to post"}, room=session_id)
+        return
     missing = [f for f in REQUIRED_FIELDS if not fields.get(f)]
     if missing:
         message = bot_reply or f"To post your property, I still need: {', '.join(missing)}. Could you please share those?" #fallback manual
@@ -25,6 +29,7 @@ def handle_post(session_id, bot_reply):
     
     doc = {
         "_id": "temporary",
+        "user_id": user_id,
         "city": fields["location"]["city"],
         "location": fields["loc_name"],
         "listing_type": fields["listing_type"],
@@ -58,6 +63,18 @@ def handle_post(session_id, bot_reply):
     post_listings(doc)
     upsert_listing(doc_id, description)
     
+    # user preferences
+    # post_prefs = {
+    #     "location": fields.get("location"),
+    #     "listing_type": fields.get("listing_type"),
+    #     "property_type": fields.get("property_type"),
+    #     "price": fields.get("price"),
+    #     "area": fields.get("area")
+    # }
+    # db_users.update_one(
+    #     {"_id": ObjectId(user_id)},
+    #     {"$push": {"post_preferences": post_prefs}}
+    # )
     message = bot_reply or "Your property has been successfully posted! You can now upload some photos to make it more attractive to buyers or tenants."
     emit("bot_response", {"message": message, "properties": [doc]}, room=session_id)
     reset_session(session_id)

@@ -1,41 +1,30 @@
 import requests
 import os
-GEOCODE_XYZ_KEY = os.getenv("GEOCODE_XYZ_KEY")
+
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY") 
+
 def geocode_location(name):
-    print(name)
-    # try:
-    #     url = f"https://nominatim.openstreetmap.org/search?q={name}&format=json"
-    #     headers = {"User-Agent": "real-estate-chatbot"}
-    #     res = requests.get(url, headers=headers)
-    #     data = res.json()
-    #     print(data)
-    #     if data:
-    #         return {
-    #             "loc_name": data[0]["display_name"],
-    #             "loc_lat": float(data[0]["lat"]),
-    #             "loc_lon": float(data[0]["lon"])
-    #         }
-    # except Exception as e:
-    #     print("Geocoding failed:", e)
-    # return {}
-    
+    print("Geocoding:", name)
     try:
         params = {
-            "auth": GEOCODE_XYZ_KEY,
-            "locate": name,
-            "json": 1
+            "address": name,
+            "key": GOOGLE_MAPS_API_KEY
         }
-        geo_res = requests.get("https://geocode.xyz", params=params, timeout=10)
-        geo_data = geo_res.json()
-        if "latt" in geo_data and "longt" in geo_data:
+        response = requests.get("https://maps.googleapis.com/maps/api/geocode/json", params=params, timeout=10)
+        data = response.json()
+
+        if data["status"] == "OK" and data["results"]:
+            top_result = data["results"][0]
+            geometry = top_result["geometry"]["location"]
+
             return {
-                "loc_name": geo_data.get("standard", {}).get("addresst", name),
-                "loc_lat": float(geo_data["latt"]),
-                "loc_lon": float(geo_data["longt"])
+                "loc_name": top_result["formatted_address"],
+                "loc_lat": float(geometry["lat"]),
+                "loc_lon": float(geometry["lng"])
             }
-        else:
-            print("geocode.xyz returned:", geo_data)
+
+        print("Google Maps returned:", data.get("status"), data.get("error_message"))
     except Exception as e:
-        print("geocode.xyz failed:", e)
+        print("Google Maps Geocoding failed:", e)
 
     return {}

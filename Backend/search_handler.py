@@ -1,7 +1,8 @@
 from pinecone_client import hybrid_search
-from db import query_mongodb
+from db import query_mongodb, db_users
 from flask_socketio import emit
 from session2 import get_or_create_session
+from bson import ObjectId
 
 def handle_search(session_id,bot_reply):
     session = get_or_create_session(session_id)
@@ -56,6 +57,13 @@ def handle_search(session_id,bot_reply):
         lat=lat,
         lon=lon
     )
+    # Some cool logic is required to store it for future email sending
+    # user_id = session.get("user_id")
+    # if fields:
+    #     db_users.update_one(
+    #         {"_id": ObjectId(user_id)},
+    #         {"$push": {"search_preferences": fields}}
+    #     )
     print("mongo results :",matching_properties)
     emit("bot_response", {"message": bot_reply, "properties": matching_properties}, room=session_id)
 

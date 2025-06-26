@@ -2,38 +2,30 @@ import { useEffect } from "react";
 import ChatWindow from "./ChatWindow.jsx";
 import ChatQuery from "./ChatQuery.jsx";
 import socket from "../static/socket.js";
-
+import { v4 as uuidv4 } from "uuid";
 function ChatBot({
   chatHistory,
   setChatHistory,
-  setProperties,
   setWaitingResponse,
   waitingResponse,
+  checkTokenValidity,
 }) {
-  useEffect(() => {
-    socket.on("bot_response", (data) => {
-      setWaitingResponse(false);
-      if (data.message) {
-        setChatHistory((prev) => [
-          ...prev,
-          { sender: "bot", message: data.message },
-        ]);
-      }
-
-      if (data.properties) {
-        setProperties(data.properties);
-      }
-    });
-
-    return () => {
-      socket.off("bot_response");
-    };
-  }, [setChatHistory, setProperties]);
-
   const handleSendMessage = (message) => {
-    socket.emit("message", { msg: message });
+    if (!checkTokenValidity()) {
+      setChatHistory((prev) => [
+        ...prev,
+        { id: uuidv4(), sender: "bot", message: "Please log in to continue." },
+      ]);
+      return;
+    }
+    const token = localStorage.getItem("token");
+    socket.auth = { token };
+    socket.emit("message", { msg: message, token });
     setWaitingResponse(true);
-    setChatHistory((prev) => [...prev, { sender: "user", message }]);
+    setChatHistory((prev) => [
+      ...prev,
+      { id: uuidv4(), sender: "user", message },
+    ]);
   };
   return (
     <>
