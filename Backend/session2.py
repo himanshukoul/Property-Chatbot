@@ -1,3 +1,4 @@
+import time
 session_data = {}
 
 def get_or_create_session(session_id):
@@ -6,8 +7,22 @@ def get_or_create_session(session_id):
         "mode": "common",  # 'common' | 'search' | 'post'
        # "fields_acquired": [],
         "fields": {},
-        "user_id": None
+        "user_id": None,
+        "last_active": time.time(),
     })
+
+def update_last_active(session_id):
+    session = get_or_create_session(session_id)
+    session["last_active"] = time.time()
+
+def get_last_active(session_id):
+    return get_or_create_session(session_id)["last_active"]
+
+def get_all_sessions():
+    return session_data.copy()
+
+def should_upsert(session):
+    return session["user_id"] and session["description"] and len(session["fields"]) >= 3
 
 def set_user(session_id,user_id):
     session = get_or_create_session(session_id)

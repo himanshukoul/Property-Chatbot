@@ -20,7 +20,7 @@ function ChatBot({
     }
     const token = localStorage.getItem("token");
     socket.auth = { token };
-    socket.emit("message", { msg: message, token });
+    socket.emit("message", { msg: message });
     setWaitingResponse(true);
     setChatHistory((prev) => [
       ...prev,

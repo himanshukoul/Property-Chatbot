@@ -1,5 +1,5 @@
-from pinecone.grpc import PineconeGRPC as Pinecone
-from pinecone import ServerlessSpec
+import load_env
+from pinecone import ServerlessSpec,Pinecone
 import os
 
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
