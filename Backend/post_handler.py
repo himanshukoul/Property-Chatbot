@@ -4,6 +4,8 @@ from flask_socketio import emit
 from session2 import get_or_create_session, reset_session
 import uuid
 from bson import ObjectId
+from email_sender import send_property_alert
+from mem0_client import search_similar_users
 
 REQUIRED_FIELDS = [
     "loc_name", "listing_type", "property_type", "ownership", "price", "area",
@@ -63,6 +65,17 @@ def handle_post(session_id, bot_reply):
     post_listings(doc)
     upsert_listing(doc_id, description)
     
+    matches = search_similar_users(description, fields["loc_name"], fields["bedrooms"], fields["price"],session["user_id"])
+    #checkout returned json
+    print(matches)
+    for m in matches:
+        matched_user_id = m.get("user_id")
+        if matched_user_id == user_id:
+            continue  
+        user = db_users.find_one({"_id": ObjectId(matched_user_id)})
+        if user and user.get("email"):
+            send_property_alert(user["email"], doc)  
+
     # user preferences
     # post_prefs = {
     #     "location": fields.get("location"),

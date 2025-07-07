@@ -10,7 +10,7 @@ function Navbar({
   return (
     <nav className="navbar">
       <div className="navbar-logo">
-        <i className="fa-solid fa-house"></i> PropBot
+        <i className="fa-solid fa-house"></i> Proppy
       </div>
       <div className="navbar-links">
         {isLoggedIn ? (

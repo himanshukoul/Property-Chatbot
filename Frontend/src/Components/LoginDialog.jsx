@@ -8,7 +8,13 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 
-function LoginDialog({ open, onClose, setIsLoggedIn, setUserData }) {
+function LoginDialog({
+  open,
+  onClose,
+  setIsLoggedIn,
+  setUserData,
+  onLoginSuccess,
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -26,16 +32,16 @@ function LoginDialog({ open, onClose, setIsLoggedIn, setUserData }) {
         setIsLoggedIn(true);
         setUserData({ email: data.email });
         onClose();
+        onLoginSuccess();
       } else {
         alert(data.message || "Login failed");
       }
     } catch (err) {
       console.error(err);
       alert("Error during login.");
-    }
-    finally{
-        setEmail("");
-        setPassword("");
+    } finally {
+      setEmail("");
+      setPassword("");
     }
   };
 

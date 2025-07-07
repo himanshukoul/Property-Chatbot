@@ -50,6 +50,7 @@ def handle_search(session_id,bot_reply):
     #     mongo_filters["post_type"] = "sell" if stype == "buy" else "rent_out" if stype == "rent" else "pg" if stype == "pg" else "commercial"
     lat = fields.get("loc_lat")
     lon = fields.get("loc_lon")
+    print("MongoDB final query:", mongo_filters)
 
     matching_properties = query_mongodb(
         filters=mongo_filters,

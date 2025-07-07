@@ -8,7 +8,13 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 
-function SignupDialog({ open, onClose, setIsLoggedIn, setUserData }) {
+function SignupDialog({
+  open,
+  onClose,
+  setIsLoggedIn,
+  setUserData,
+  onSignupSuccess,
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -26,6 +32,7 @@ function SignupDialog({ open, onClose, setIsLoggedIn, setUserData }) {
         setIsLoggedIn(true);
         setUserData({ email: data.email });
         onClose();
+        onSignupSuccess();
       } else {
         alert(data.message || "Signup failed");
       }

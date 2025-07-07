@@ -6,19 +6,16 @@ import ChatBot from "./Components/ChatBot.jsx";
 import DisplayCards from "./Components/DisplayCards.jsx";
 import LoginDialog from "./Components/LoginDialog.jsx";
 import SignupDialog from "./Components/SignupDialog.jsx";
+import ResumeMemoryDialog from "./Components/ResumeMemoryDialog.jsx";
 import { jwtDecode } from "jwt-decode";
 import socket from "./static/socket.js";
 import { v4 as uuidv4 } from "uuid";
-
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+
 const theme = createTheme({
   palette: {
-    primary: {
-      main: "#157c63",
-    },
-    secondary: {
-      main: "#FF7300",
-    },
+    primary: { main: "#157c63" },
+    secondary: { main: "#FF7300" },
   },
 });
 
@@ -31,6 +28,8 @@ function App() {
   const [userData, setUserData] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+  const [savedMemories, setSavedMemories] = useState([]);
+  const [showMemoryDialog, setShowMemoryDialog] = useState(false);
 
   const checkTokenValidity = () => {
     const token = localStorage.getItem("token");
@@ -38,7 +37,7 @@ function App() {
     try {
       const decoded = jwtDecode(token);
       const currentTime = Date.now() / 1000;
-      if (!decoded.exp || decoded.exp < currentTime) {
+      if (!decoded.exp || decoded.exp < currentTime || !decoded.user_id) {
         localStorage.removeItem("token");
         localStorage.removeItem("email");
         setIsLoggedIn(false);
@@ -55,7 +54,7 @@ function App() {
         return false;
       }
       return true;
-    } catch (err) {
+    } catch {
       localStorage.removeItem("token");
       localStorage.removeItem("email");
       setIsLoggedIn(false);
@@ -72,18 +71,68 @@ function App() {
       return false;
     }
   };
+
+  const fetchMemories = () => {
+    const token = localStorage.getItem("token");
+    if (!token || !checkTokenValidity()) return;
+
+    fetch("http://localhost:5000/api/memories", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.memories)) {
+          setSavedMemories(data.memories);
+          setShowMemoryDialog(true);
+        }
+      })
+      .catch(() => {
+        setChatHistory((prev) => [
+          ...prev,
+          {
+            id: uuidv4(),
+            sender: "bot",
+            message: "Failed to load past sessions. Please try again.",
+          },
+        ]);
+        setShowMemoryDialog(false);
+      });
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token && checkTokenValidity()) {
       setIsLoggedIn(true);
-      const email = localStorage.getItem("email");
-      setUserData({ email });
+      setUserData({ email: localStorage.getItem("email") });
+      socket.auth = { token };
+      if (!socket.connected) socket.connect();
+      fetchMemories();
     }
+    return () => socket.disconnect();
+  }, []);
+
+  useEffect(() => {
+    socket.on("connect", () => console.log("Socket connected"));
+
+    socket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error.message);
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          id: uuidv4(),
+          sender: "bot",
+          message: "Failed to connect to server.",
+        },
+      ]);
+      setWaitingResponse(false);
+    });
+
     socket.on("bot_response", (data) => {
       setWaitingResponse(false);
       if (
-        data.message === "Authentication required" ||
-        data.message === "Invalid or expired token"
+        ["Authentication required", "Invalid or expired token"].includes(
+          data.message
+        )
       ) {
         localStorage.removeItem("token");
         localStorage.removeItem("email");
@@ -98,23 +147,34 @@ function App() {
             message: "Please log in to continue.",
           },
         ]);
-      } else if (data.message) {
+        return;
+      }
+
+      if (data.message) {
         setChatHistory((prev) => [
           ...prev,
           { id: uuidv4(), sender: "bot", message: data.message },
         ]);
       }
+
       if (data.properties) {
         setProperties(data.properties);
       }
     });
+
+    socket.on("memory_popped", () => {
+      if (checkTokenValidity()) fetchMemories();
+    });
+
     return () => {
+      socket.off("connect");
+      socket.off("connect_error");
       socket.off("bot_response");
+      socket.off("memory_popped");
     };
-  }, [setChatHistory, setProperties]);
+  }, [fetchMemories]);
 
   const handleInitialSearch = (query) => {
-    console.log("Init search");
     if (!checkTokenValidity()) {
       setShowLogin(true);
       setChatHistory((prev) => [
@@ -125,8 +185,9 @@ function App() {
     }
     const token = localStorage.getItem("token");
     socket.auth = { token };
-    socket.emit("message", { msg: query, token });
-    console.log("emitted msg", query);
+    if (!socket.connected) socket.connect();
+
+    socket.emit("message", { msg: query });
     setWaitingResponse(true);
     setChatHistory((prev) => [
       ...prev,
@@ -134,6 +195,7 @@ function App() {
     ]);
     setChatStarted(true);
   };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("email");
@@ -143,6 +205,16 @@ function App() {
     setProperties([]);
     setChatStarted(false);
   };
+
+  const handleResumeMemory = (memory) => {
+    setShowMemoryDialog(false);
+    handleInitialSearch(memory.text);
+  };
+
+  const handleStartFresh = () => {
+    setShowMemoryDialog(false);
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <Navbar
@@ -153,14 +225,12 @@ function App() {
         handleLogout={handleLogout}
       />
       <SearchBar handleInitialSearch={handleInitialSearch} />
-
       <div className="main-content">
         <div
           className={chatStarted ? "card-section half" : "card-section full"}
         >
           <DisplayCards theme={theme} properties={properties} />
         </div>
-
         {chatStarted && (
           <div className="chat-section">
             <ChatBot
@@ -173,17 +243,26 @@ function App() {
             />
           </div>
         )}
+        <ResumeMemoryDialog
+          open={showMemoryDialog}
+          onClose={() => setShowMemoryDialog(false)}
+          memories={savedMemories}
+          onSelectMemory={handleResumeMemory}
+          onStartFresh={handleStartFresh}
+        />
         <LoginDialog
           open={showLogin}
           onClose={() => setShowLogin(false)}
           setIsLoggedIn={setIsLoggedIn}
           setUserData={setUserData}
+          onLoginSuccess={fetchMemories}
         />
         <SignupDialog
           open={showSignup}
           onClose={() => setShowSignup(false)}
           setIsLoggedIn={setIsLoggedIn}
           setUserData={setUserData}
+          onSignupSuccess={fetchMemories}
         />
       </div>
     </ThemeProvider>
