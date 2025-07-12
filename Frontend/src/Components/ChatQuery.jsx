@@ -1,3 +1,5 @@
+import { Box, TextField, IconButton } from "@mui/material";
+import SendIcon from "@mui/icons-material/Send";
 import { useState } from "react";
 
 function ChatQuery({ handleSendMessage }) {
@@ -10,16 +12,19 @@ function ChatQuery({ handleSendMessage }) {
   };
 
   return (
-    <div className="chat-query">
-      <input
-        type="text"
+    <Box sx={{ display: "flex", p: 1, borderTop: "1px solid #ccc" }}>
+      <TextField
+        fullWidth
+        variant="outlined"
         placeholder="Ask about properties..."
         value={input}
-        onChange={(event) => setInput(event.target.value)}
-        onKeyDown={(event) => event.key === "Enter" && handleSend()}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && handleSend()}
       />
-      <button onClick={handleSend}>Send</button>
-    </div>
+      <IconButton color="primary" onClick={handleSend}>
+        <SendIcon />
+      </IconButton>
+    </Box>
   );
 }
 

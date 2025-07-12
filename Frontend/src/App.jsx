@@ -2,15 +2,19 @@ import "./App.css";
 import { useState, useEffect } from "react";
 import Navbar from "./Components/Navbar.jsx";
 import SearchBar from "./Components/SearchBar.jsx";
-import ChatBot from "./Components/ChatBot.jsx";
 import DisplayCards from "./Components/DisplayCards.jsx";
 import LoginDialog from "./Components/LoginDialog.jsx";
 import SignupDialog from "./Components/SignupDialog.jsx";
 import ResumeMemoryDialog from "./Components/ResumeMemoryDialog.jsx";
+import ChatDrawer from "./Components/ChatDrawer.jsx";
+
 import { jwtDecode } from "jwt-decode";
 import socket from "./static/socket.js";
 import { v4 as uuidv4 } from "uuid";
+
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { Fab } from "@mui/material";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
 
 const theme = createTheme({
   palette: {
@@ -20,7 +24,7 @@ const theme = createTheme({
 });
 
 function App() {
-  const [chatStarted, setChatStarted] = useState(false);
+  const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
   const [properties, setProperties] = useState([]);
   const [chatHistory, setChatHistory] = useState([]);
   const [waitingResponse, setWaitingResponse] = useState(false);
@@ -193,7 +197,7 @@ function App() {
       ...prev,
       { id: uuidv4(), sender: "user", message: query },
     ]);
-    setChatStarted(true);
+    setChatDrawerOpen(true);
   };
 
   const handleLogout = () => {
@@ -203,7 +207,7 @@ function App() {
     setUserData(null);
     setChatHistory([]);
     setProperties([]);
-    setChatStarted(false);
+    setChatDrawerOpen(false);
   };
 
   const handleResumeMemory = (memory) => {
@@ -226,23 +230,10 @@ function App() {
       />
       <SearchBar handleInitialSearch={handleInitialSearch} />
       <div className="main-content">
-        <div
-          className={chatStarted ? "card-section half" : "card-section full"}
-        >
+        <div className="card-section full">
           <DisplayCards theme={theme} properties={properties} />
         </div>
-        {chatStarted && (
-          <div className="chat-section">
-            <ChatBot
-              chatHistory={chatHistory}
-              setChatHistory={setChatHistory}
-              setProperties={setProperties}
-              setWaitingResponse={setWaitingResponse}
-              waitingResponse={waitingResponse}
-              checkTokenValidity={checkTokenValidity}
-            />
-          </div>
-        )}
+
         <ResumeMemoryDialog
           open={showMemoryDialog}
           onClose={() => setShowMemoryDialog(false)}
@@ -250,6 +241,7 @@ function App() {
           onSelectMemory={handleResumeMemory}
           onStartFresh={handleStartFresh}
         />
+
         <LoginDialog
           open={showLogin}
           onClose={() => setShowLogin(false)}
@@ -257,6 +249,7 @@ function App() {
           setUserData={setUserData}
           onLoginSuccess={fetchMemories}
         />
+
         <SignupDialog
           open={showSignup}
           onClose={() => setShowSignup(false)}
@@ -264,6 +257,33 @@ function App() {
           setUserData={setUserData}
           onSignupSuccess={fetchMemories}
         />
+
+        <ChatDrawer
+          open={chatDrawerOpen}
+          onClose={() => setChatDrawerOpen(false)}
+          chatHistory={chatHistory}
+          setChatHistory={setChatHistory}
+          setProperties={setProperties}
+          setWaitingResponse={setWaitingResponse}
+          waitingResponse={waitingResponse}
+          checkTokenValidity={checkTokenValidity}
+        />
+
+        {!chatDrawerOpen && (
+          <Fab
+            color="primary"
+            aria-label="chat"
+            onClick={() => setChatDrawerOpen(true)}
+            sx={{
+              position: "fixed",
+              bottom: 16,
+              right: 16,
+              backgroundColor: "#157c63",
+            }}
+          >
+            <SmartToyIcon />
+          </Fab>
+        )}
       </div>
     </ThemeProvider>
   );
