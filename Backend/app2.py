@@ -11,7 +11,6 @@ from post_handler import handle_post
 import jwt
 import bcrypt
 import datetime
-from functools import wraps
 from db import db_users
 from threading import Thread
 from mem0_client import upsert_memory, get_memories
