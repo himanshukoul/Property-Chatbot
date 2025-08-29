@@ -1,0 +1,15 @@
+.card-image {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 8px 8px 0 0;
+}
+
+.swiper-button-next,
+.swiper-button-prev {
+  color: #157c63;
+}
+
+.property-card-content p {
+  margin: 4px 0;
+}
