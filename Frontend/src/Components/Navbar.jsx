@@ -6,6 +6,7 @@ function Navbar({
   setShowLogin,
   setShowSignup,
   handleLogout,
+  handleMyPosts,
 }) {
   return (
     <nav className="navbar">
@@ -16,6 +17,13 @@ function Navbar({
         {isLoggedIn ? (
           <>
             <span className="user-email">Welcome, {userData?.email}</span>
+            <Button
+              onClick={handleMyPosts}
+              variant="outlined"
+              color="secondary"
+            >
+              My Posts
+            </Button>
             <Button onClick={handleLogout} variant="outlined" color="secondary">
               Logout
             </Button>

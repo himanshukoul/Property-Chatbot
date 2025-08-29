@@ -29,16 +29,12 @@ def hybrid_search(query, top_k=10):
         top_k=top_k,
         include_metadata=True
     )
-
-    return merge_chunks(results)
-
-def merge_chunks(results):
-    all_hits = results["matches"]
-    deduped = {}
-    for hit in all_hits:
-        doc_id = hit["id"]
-        score = hit["score"]
-        text = hit["metadata"].get("chunk_text", "")
-        if doc_id not in deduped or deduped[doc_id]["score"] < score:
-            deduped[doc_id] = {"_id": doc_id, "_score": score, "chunk_text": text}
-    return sorted(deduped.values(), key=lambda x: x["_score"], reverse=True)
+    return [
+        {
+            "_id": match["id"],
+            "_score": match["score"],
+            "chunk_text": match["metadata"].get("chunk_text", "")
+        }
+        for match in results["matches"]
+    ]
+    

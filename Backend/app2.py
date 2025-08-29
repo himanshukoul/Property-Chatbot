@@ -1,5 +1,5 @@
 import load_env
-from flask import Flask, request,jsonify
+from flask import Flask, request,jsonify,send_from_directory
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from config import DevelopmentConfig
@@ -11,15 +11,21 @@ from post_handler import handle_post
 import jwt
 import bcrypt
 import datetime
-from db import db_users
+from db import db_users,db_listings
 from threading import Thread
 from mem0_client import upsert_memory, get_memories
 import atexit
+import os
+import uuid
+from werkzeug.utils import secure_filename
+from flask import send_from_directory
 
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+os.makedirs(app.config["UPLOAD_FOLDER"],exist_ok=True)
 
 @socketio.on("connect")
 def handle_connect(auth):
@@ -174,13 +180,72 @@ def fetch_memories():
     except:
         return jsonify({"memories": []}), 401
 
+@app.route('/api/upload_images/<listing_id>',methods=['POST'])
+def upload_images(listing_id):
+    if 'images' not in request.files:
+        return jsonify({"message":"no Image Found"}),400
+    
+    listing = db_listings.find_one({"_id": listing_id})
+    if listing and listing.get("images"):
+        for old_img_url in listing["images"]:
+            old_filename = old_img_url.replace("/uploads/", "")
+            try:
+                os.remove(os.path.join(app.config["UPLOAD_FOLDER"], old_filename))
+            except FileNotFoundError:
+                pass 
+    files = request.files.getlist("images")
+    saved_urls = []
+    for file in files:
+        filename = secure_filename(file.filename) 
+        unique_name = f"{uuid.uuid4().hex}_{filename}" #2A13B_balcony.png ...
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_name)
+        file.save(filepath)
+        image_url = f"/uploads/{unique_name}"
+        saved_urls.append(image_url)
+    db_listings.update_one({"_id": listing_id}, {"$set": {"images": saved_urls}})
+    return jsonify({"message": "Images uploaded", "urls": saved_urls}), 200
+
+@app.route("/api/delete_listing/<listing_id>", methods=["DELETE"])
+def delete_listing(listing_id):
+    token = request.headers.get("Authorization", "")
+    if not token.startswith("Bearer "): return jsonify({"message": "Invalid token"}), 401
+    token = token.replace("Bearer ", "")
+    try:
+        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+        user_id = payload["user_id"]
+        result = db_listings.delete_one({"_id": listing_id, "user_id": user_id})
+        if result.deleted_count:
+            return jsonify({"message": "Deleted"}), 200
+        return jsonify({"message": "Not found or unauthorized"}), 404
+    except:
+        return jsonify({"message": "Invalid token"}), 401
+  
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+  
+@app.route("/api/my_listings", methods=["GET"])
+def my_listings():
+    token = request.headers.get("Authorization", "")
+    if not token.startswith("Bearer "):
+        return jsonify({"message": "Invalid Authorization header"}), 401
+    token = token.replace("Bearer ", "")
+    try:
+        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+        user_id = payload["user_id"]
+        listings = list(db_listings.find({"user_id": user_id}))
+        for l in listings:
+            l["_id"] = str(l["_id"])
+        return jsonify({"listings": listings}), 200
+    except:
+        return jsonify({"message": "Invalid token"}), 401
 
 def background_memory_pusher():
     while True:
         time.sleep(30)
         now = time.time()
         for session_id, session in get_all_sessions().items():
-            if now - session["last_active"] > 600:  # 10 mins
+            if now - session["last_active"] > app.config['MEMORY_PUSHER_DELTA']: 
                 if should_upsert(session) and not session.get("mem_sent"):
                     upsert_memory(
                         user_id=session["user_id"],

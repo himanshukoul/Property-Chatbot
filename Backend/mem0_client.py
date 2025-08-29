@@ -79,7 +79,7 @@ def search_similar_users(posted_description, loc_name, bhk, price, current_user_
         return []
 
 
-def get_memories(user_id: str, top_k: int = 3):
+def get_memories(user_id, top_k = 3):
     try:
         response = client.get_all(user_id=user_id, page=1, page_size=top_k)
         print("Raw Mem0 get_all response:", response)

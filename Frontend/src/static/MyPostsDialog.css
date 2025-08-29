@@ -1,13 +1,6 @@
-.cards-container {
+.posts-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
   padding: 20px;
-}
-
-.empty-msg {
-  padding: 40px;
-  text-align: center;
-  font-style: italic;
-  color: #888;
 }

@@ -11,7 +11,7 @@ def handle_search(session_id,bot_reply):
 
     top_vector_results = hybrid_search(query_text)
     print("vector result : " , top_vector_results)
-    top_ids = [res["_id"] for res in top_vector_results]
+    top_ids = [res["_id"] for res in top_vector_results if res["_score"] >= 0.6]
     
     mongo_filters = {}
     if "price_min" in fields or "price_max" in fields:

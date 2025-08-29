@@ -7,7 +7,7 @@ import LoginDialog from "./Components/LoginDialog.jsx";
 import SignupDialog from "./Components/SignupDialog.jsx";
 import ResumeMemoryDialog from "./Components/ResumeMemoryDialog.jsx";
 import ChatDrawer from "./Components/ChatDrawer.jsx";
-
+import MyPostsDialog from "./Components/MyPostsDialog.jsx";
 import { jwtDecode } from "jwt-decode";
 import socket from "./static/socket.js";
 import { v4 as uuidv4 } from "uuid";
@@ -34,7 +34,8 @@ function App() {
   const [showSignup, setShowSignup] = useState(false);
   const [savedMemories, setSavedMemories] = useState([]);
   const [showMemoryDialog, setShowMemoryDialog] = useState(false);
-
+  const [myPosts, setMyPosts] = useState([]);
+  const [showMyPosts, setShowMyPosts] = useState(false);
   const checkTokenValidity = () => {
     const token = localStorage.getItem("token");
     if (!token) return false;
@@ -78,7 +79,7 @@ function App() {
 
   const fetchMemories = () => {
     const token = localStorage.getItem("token");
-    if (!token || !checkTokenValidity()) return;
+    if (!checkTokenValidity()) return;
 
     fetch("http://localhost:5000/api/memories", {
       headers: { Authorization: `Bearer ${token}` },
@@ -102,10 +103,29 @@ function App() {
         setShowMemoryDialog(false);
       });
   };
+  const handleMyPosts = () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!checkTokenValidity()) return;
+      fetch("http://localhost:5000/api/my_listings", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.listings) {
+            setMyPosts(data.listings);
+            setShowMyPosts(true);
+          }
+        });
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token && checkTokenValidity()) {
+    if (checkTokenValidity()) {
       setIsLoggedIn(true);
       setUserData({ email: localStorage.getItem("email") });
       socket.auth = { token };
@@ -227,6 +247,7 @@ function App() {
         setShowLogin={setShowLogin}
         setShowSignup={setShowSignup}
         handleLogout={handleLogout}
+        handleMyPosts={handleMyPosts}
       />
       <SearchBar handleInitialSearch={handleInitialSearch} />
       <div className="main-content">
@@ -256,6 +277,12 @@ function App() {
           setIsLoggedIn={setIsLoggedIn}
           setUserData={setUserData}
           onSignupSuccess={fetchMemories}
+        />
+
+        <MyPostsDialog
+          open={showMyPosts}
+          onClose={() => setShowMyPosts(false)}
+          posts={myPosts}
         />
 
         <ChatDrawer
