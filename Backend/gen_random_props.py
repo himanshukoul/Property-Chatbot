@@ -30,7 +30,7 @@ def get_coordinates(full_location):
     try:
         geo = geocode_location(full_location)
         if geo:
-            return float(geo["loc_lon"]), float(geo["loc_lat"])
+            return  geo["loc_name"],float(geo["loc_lon"]), float(geo["loc_lat"])
     except Exception as e:
         print("Geocode error:", e)
     return None
@@ -78,7 +78,7 @@ def generate_listing():
     coords = get_coordinates(f"{locality}, {city}")
     if coords is None:
         return None
-    lon, lat = coords
+    loc_name, lon, lat = coords
 
     doc_id = str(uuid.uuid4())
     desc = generate_description(
@@ -89,8 +89,10 @@ def generate_listing():
 
     doc = {
         "_id": doc_id,
+        "user_id": "dummy",
+        "user_name": "dummy",
         "city": city,
-        "location": locality,
+        "location": loc_name,
         "listing_type": listing_type,
         "property_type": prop_type,
         "ownership": ownership,
@@ -108,7 +110,8 @@ def generate_listing():
         "location_point": {
             "type": "Point",
             "coordinates": [lon, lat]
-        }
+        },
+        "images":[]
     }
 
     return doc

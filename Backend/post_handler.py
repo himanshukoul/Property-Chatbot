@@ -28,10 +28,11 @@ def handle_post(session_id, bot_reply):
     
     
     description = session["description"]
-    
+    user_name = db_users.find_one({"_id": ObjectId(user_id)}).get("email")
     doc = {
         "_id": "temporary",
         "user_id": user_id,
+        "user_name": user_name,
         "city": fields["location"]["city"],
         "location": fields["loc_name"],
         "listing_type": fields["listing_type"],
@@ -51,7 +52,8 @@ def handle_post(session_id, bot_reply):
         "location_point": {
             "type": "Point",
             "coordinates": [fields["loc_lon"], fields["loc_lat"]]
-        }
+        },
+        "images": []
     }
     
     if not fields.get("confirm"):
@@ -70,8 +72,6 @@ def handle_post(session_id, bot_reply):
     print(matches)
     for m in matches:
         matched_user_id = m.get("user_id")
-        if matched_user_id == user_id:
-            continue  
         user = db_users.find_one({"_id": ObjectId(matched_user_id)})
         if user and user.get("email"):
             send_property_alert(user["email"], doc)  

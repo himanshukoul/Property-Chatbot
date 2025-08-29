@@ -1,9 +1,11 @@
 import os
 import json
 from openai import OpenAI
+import google.generativeai as genai
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+#client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+ 
 EXTRACTION_PROMPT_COMMON = """
 You are a real estate assistant. Extract structured data from the user's message.
 
@@ -147,39 +149,68 @@ Instructions:
 2. For missing or ambiguous filters,omit from `data`, and write polite and clear questions to ask about missing details.
 3. Change intent to search only when you are fully sure.
 4. Convert values wherever required.
-5. Once all data fields are provided, ask for confirmation before proceeding.
+5. Once all data fields are provided, ask for confirmation before proceeding. e.g. please type 'confirm'
 6. Add confirm as True only if every field is filled and user explicitly confirms. Otherwise set confirm: false.
 7. If everything is provided and confirmed, respond with a confirmation like: “Your property has been successfully posted! and ask for photos to make it more attractive”.
 8. In location both city and locality are required. If user provides only one, you should ask for the other.
 """
 
-
 def extract_fields_from_query(user_msg,prev_fields,mode):
     prev_msg = json.dumps(prev_fields)
     print(prev_msg)
+
     if mode == "common":
-        prompt = EXTRACTION_PROMPT_COMMON.format(user_msg=user_msg,prev_msg=prev_msg)
+        prompt = EXTRACTION_PROMPT_COMMON.format(user_msg=user_msg, prev_msg=prev_msg)
     elif mode == "search":
-        prompt = EXTRACTION_PROMPT_SEARCH.format(user_msg=user_msg,prev_msg=prev_msg)
+        prompt = EXTRACTION_PROMPT_SEARCH.format(user_msg=user_msg, prev_msg=prev_msg)
     else:
-        prompt = EXTRACTION_PROMPT_POST.format(user_msg=user_msg,prev_msg=prev_msg)
-        
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0,
+        prompt = EXTRACTION_PROMPT_POST.format(user_msg=user_msg, prev_msg=prev_msg)
+    genai.configure(api_key=os.getenv("GOOGLE_STUDIO_KEY"))
+    model = genai.GenerativeModel("gemini-2.5-flash")
+    response = model.generate_content(
+        contents=[{"role": "user", "parts": [prompt]}],
+        generation_config={"temperature": 0}
     )
-    content = response.choices[0].message.content
+
+    content = response.text
     print("content is: ", content)
+    
     try:
         return json.loads(content)
     except json.JSONDecodeError:
-        print("Invalid JSON from OpenAI:", content)
+        print("Invalid JSON from Gemini:", content)
         try:
-          fixed = content.strip().rstrip(",}") + "}"
-          return json.loads(fixed)
+            fixed = content.strip().rstrip(",}") + "}"
+            return json.loads(fixed)
         except Exception:
-          return {}
+            return {}
+
+# def extract_fields_from_query(user_msg,prev_fields,mode):
+#     prev_msg = json.dumps(prev_fields)
+#     print(prev_msg)
+#     if mode == "common":
+#         prompt = EXTRACTION_PROMPT_COMMON.format(user_msg=user_msg,prev_msg=prev_msg)
+#     elif mode == "search":
+#         prompt = EXTRACTION_PROMPT_SEARCH.format(user_msg=user_msg,prev_msg=prev_msg)
+#     else:
+#         prompt = EXTRACTION_PROMPT_POST.format(user_msg=user_msg,prev_msg=prev_msg)
+        
+#     response = client.chat.completions.create(
+#         model="gpt-4.1-mini",
+#         messages=[{"role": "user", "content": prompt}],
+#         temperature=0,
+#     )
+#     content = response.choices[0].message.content
+#     print("content is: ", content)
+#     try:
+#         return json.loads(content)
+#     except json.JSONDecodeError:
+#         print("Invalid JSON from OpenAI:", content)
+#         try:
+#           fixed = content.strip().rstrip(",}") + "}"
+#           return json.loads(fixed)
+#         except Exception:
+#           return {}
     # I want a house in Mayur Vihar. It should be around 50 lakhs. Should have good schools and malls nearby.
     # i want a house having hospitals and schools for children nearby, i also want park in that region
     # content = {
