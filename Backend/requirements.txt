@@ -4,7 +4,6 @@ flask
 flask_cors
 flask_socketio
 openai
-sentence_transformers
 pymongo
 mem0ai
 PyJWT
