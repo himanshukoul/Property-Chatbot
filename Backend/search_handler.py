@@ -42,7 +42,7 @@ def handle_search(session_id,bot_reply):
         if "preferred_floor_max" in fields:
             mongo_filters["floor_number"]["$lte"] = fields["preferred_floor_max"]
     for k,v in fields.items():      
-        if k not in ["location", "loc_name", "loc_lat", "loc_lon", "price_min", "price_max", "area_min", "area_max", "preferred_floor_min", "preferred_floor_max", "property_age_min", "property_age_max","amenities"]:
+        if k not in ["location", "loc_name", "loc_lat", "loc_lon", "price_min", "price_max", "area_min", "area_max", "preferred_floor_min", "preferred_floor_max", "property_age_min", "property_age_max","amenities","confirm"]:
             mongo_filters[k] = v
             
     # if fields.get("search_type") is not None:
