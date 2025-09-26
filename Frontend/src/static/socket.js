@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
-
-const socket = io("http://localhost:5000", {
+const base = import.meta.env.VITE_API_BASE_URL;
+const socket = io(base, {
   autoConnect: false,
   transports: ["websocket"], 
 });

@@ -16,6 +16,8 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { Fab } from "@mui/material";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 
+const base = import.meta.env.VITE_API_BASE_URL;
+
 const theme = createTheme({
   palette: {
     primary: { main: "#157c63" },
@@ -81,7 +83,7 @@ function App() {
     const token = localStorage.getItem("token");
     if (!checkTokenValidity()) return;
 
-    fetch("http://localhost:5000/api/memories", {
+    fetch(`${base}/api/memories`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -107,7 +109,7 @@ function App() {
     try {
       const token = localStorage.getItem("token");
       if (!checkTokenValidity()) return;
-      fetch("http://localhost:5000/api/my_listings", {
+      fetch(`${base}/api/my_listings`, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       })

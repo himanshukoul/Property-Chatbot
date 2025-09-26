@@ -26,6 +26,7 @@ CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 os.makedirs(app.config["UPLOAD_FOLDER"],exist_ok=True)
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 @socketio.on("connect")
 def handle_connect(auth):
@@ -37,7 +38,7 @@ def handle_connect(auth):
         emit("bot_response", {"message": "Authentication required"}, room=session_id)
         raise ConnectionRefusedError("Authentication required")
     try:
-        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         print(f"Decoded payload: {payload}")
         user_id = payload['user_id']
         session = get_or_create_session(session_id)
@@ -148,7 +149,7 @@ def signup():
         'user_id': str(user_id),
         'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=app.config['JWT_EXPIRATION_DELTA'])
 
-    }, app.config['SECRET_KEY'], algorithm="HS256")
+    }, SECRET_KEY, algorithm="HS256")
     return jsonify({"token": token, "email": email}), 200
 
 @app.route("/api/login", methods=["POST"])
@@ -162,7 +163,7 @@ def login():
     token = jwt.encode({
         'user_id': str(user['_id']),
         'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=app.config['JWT_EXPIRATION_DELTA'])
-    }, app.config['SECRET_KEY'], algorithm="HS256")
+    }, SECRET_KEY, algorithm="HS256")
     return jsonify({"token": token, "email": email})
 
 @app.route("/api/memories", methods=["GET"])
@@ -173,7 +174,7 @@ def fetch_memories():
     token = token.replace("Bearer ", "")
     print("Authorization header:", token)
     try:
-        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         user_id = payload["user_id"]
         memories = get_memories(user_id, top_k=3)
         return jsonify({"memories": memories}), 200
@@ -208,18 +209,30 @@ def upload_images(listing_id):
 @app.route("/api/delete_listing/<listing_id>", methods=["DELETE"])
 def delete_listing(listing_id):
     token = request.headers.get("Authorization", "")
-    if not token.startswith("Bearer "): return jsonify({"message": "Invalid token"}), 401
+    if not token.startswith("Bearer "):
+        return jsonify({"message": "Invalid token"}), 401
+
     token = token.replace("Bearer ", "")
     try:
-        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         user_id = payload["user_id"]
-        result = db_listings.delete_one({"_id": listing_id, "user_id": user_id})
-        if result.deleted_count:
-            return jsonify({"message": "Deleted"}), 200
-        return jsonify({"message": "Not found or unauthorized"}), 404
-    except:
+
+        listing = db_listings.find_one({"_id": listing_id, "user_id": user_id})
+        if not listing:
+            return jsonify({"message": "Not found or unauthorized"}), 404
+
+        db_listings.delete_one({"_id": listing_id, "user_id": user_id})
+
+        if listing.get("image_path"):
+            image_file = os.path.join(app.config["UPLOAD_FOLDER"], listing["image_path"])
+            if os.path.exists(image_file):
+                os.remove(image_file)
+
+        return jsonify({"message": "Deleted"}), 200
+
+    except Exception as e:
         return jsonify({"message": "Invalid token"}), 401
-  
+      
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
@@ -231,7 +244,7 @@ def my_listings():
         return jsonify({"message": "Invalid Authorization header"}), 401
     token = token.replace("Bearer ", "")
     try:
-        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         user_id = payload["user_id"]
         listings = list(db_listings.find({"user_id": user_id}))
         for l in listings:

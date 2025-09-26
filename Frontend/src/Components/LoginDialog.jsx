@@ -7,6 +7,7 @@ import {
   Button,
 } from "@mui/material";
 import { useState } from "react";
+const base = import.meta.env.VITE_API_BASE_URL;
 
 function LoginDialog({
   open,
@@ -20,7 +21,7 @@ function LoginDialog({
 
   const handleLogin = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/login", {
+      const res = await fetch(`${base}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
