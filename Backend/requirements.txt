@@ -9,4 +9,5 @@ mem0ai
 PyJWT
 bcrypt
 google.generativeai
+gunicorn
 eventlet
