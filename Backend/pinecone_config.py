@@ -1,10 +1,23 @@
 import load_env
-from pinecone import ServerlessSpec,Pinecone
+from pinecone import Pinecone
 import os
 
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 
-dense_index_name = "description-dense-py"
+dense_index = "description-dense-real-estate-chatbot"
+
+if not pc.has_index(dense_index):
+    pc.create_index_for_model(
+        name=dense_index,
+        cloud="aws",
+        region="us-east-1",
+        embed={
+            "model":"multilingual-e5-large",
+            "field_map":{"text": "chunk_text"}
+        }
+    )
+
+"""dense_index_name = "description-dense-py"
 if not pc.has_index(dense_index_name):
     pc.create_index(
         name=dense_index_name,
@@ -13,15 +26,6 @@ if not pc.has_index(dense_index_name):
         metric="cosine",
         spec=ServerlessSpec(cloud="aws", region="us-east-1")
     )
-
-"""sparse_index_name = "description-sparse-py"
-if not pc.has_index(sparse_index_name):
-    pc.create_index(
-        name=sparse_index_name,
-        vector_type="sparse",
-        metric="dotproduct",
-        spec=ServerlessSpec(cloud="aws", region="us-east-1")
-    )
 """
-dense_index = pc.Index(dense_index_name)
-#sparse_index = pc.Index(sparse_index_name)
+
+dense_index = pc.Index(dense_index)
