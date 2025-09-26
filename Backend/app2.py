@@ -1,3 +1,5 @@
+import eventlet
+eventlet.monkey_patch()
 import load_env
 from flask import Flask, request,jsonify,send_from_directory
 from flask_socketio import SocketIO, emit
