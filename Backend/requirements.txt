@@ -10,3 +10,4 @@ mem0ai
 PyJWT
 bcrypt
 google.generativeai
+eventlet
