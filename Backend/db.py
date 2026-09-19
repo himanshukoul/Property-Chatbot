@@ -1,11 +1,7 @@
-import os
-from pymongo.server_api import ServerApi
 from pymongo import MongoClient, GEOSPHERE
-import load_env
+from config import DevelopmentConfig
 
-uri = os.getenv("MONGO_URI")
-client = MongoClient(uri, server_api=ServerApi("1"))
-
+client = MongoClient(DevelopmentConfig.MONGO_URI)
 db = client.real_estate
 db_listings = db.listings
 db_listings.create_index([("location_point", GEOSPHERE)])
