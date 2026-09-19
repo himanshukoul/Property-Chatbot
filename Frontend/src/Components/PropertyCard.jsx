@@ -9,11 +9,10 @@ import "swiper/css";
 import "../static/PropertyCard.css";
 import NoImage from "../assets/no-image.jpg";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
-const base = import.meta.env.VITE_API_BASE_URL;
-
+const backendBaseUrl = "http://localhost:5000";
 function PropertyCard({ post, showButtons = false, onDelete, onUpload }) {
   const images = post.images?.length
-    ? post.images.map((img) => base + img)
+    ? post.images.map((img) => backendBaseUrl + img)
     : [NoImage];
 
   return (

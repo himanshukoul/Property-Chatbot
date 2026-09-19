@@ -3,7 +3,6 @@ import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import PropertyCard from "./PropertyCard.jsx";
 import "../static/MyPostsDialog.css";
-const base = import.meta.env.VITE_API_BASE_URL;
 
 function MyPostsDialog({ open, onClose, posts }) {
   const token = localStorage.getItem("token");
@@ -25,7 +24,7 @@ function MyPostsDialog({ open, onClose, posts }) {
       }
 
       const res = await fetch(
-        `${base}/api/upload_images/${post._id}`,
+        `http://localhost:5000/api/upload_images/${post._id}`,
         {
           method: "POST",
           body: formData,
@@ -44,7 +43,7 @@ function MyPostsDialog({ open, onClose, posts }) {
     if (!confirm) return;
 
     const res = await fetch(
-      `${base}/api/delete_listing/${post._id}`,
+      `http://localhost:5000/api/delete_listing/${post._id}`,
       {
         method: "DELETE",
         headers: {
